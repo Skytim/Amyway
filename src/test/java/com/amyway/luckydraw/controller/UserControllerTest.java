@@ -52,7 +52,7 @@ public class UserControllerTest {
                 createRequest.setDrawQuota(50);
 
                 mockMvc.perform(post("/api/users")
-                                .header("Authorization", "Bearer mock-token")
+                                .header("Authorization", "Bearer admin-secret")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(createRequest)))
                                 .andExpect(status().isOk())

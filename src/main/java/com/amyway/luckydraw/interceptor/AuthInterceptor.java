@@ -9,21 +9,26 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class AuthInterceptor implements HandlerInterceptor {
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+            throws Exception {
         String authHeader = request.getHeader("Authorization");
-        
+
         // Simplified Auth Logic for Demo
         // In reality, verify JWT or OAuth token
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return false;
         }
-        
+
         // Mock Admin check: if token is "Bearer admin-secret", allow admin routes
         String token = authHeader.substring(7);
-        if (request.getRequestURI().startsWith("/api/admin") && !"admin-secret".equals(token)) {
-             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-             return false;
+        boolean isAdminPath = request.getRequestURI().startsWith("/api/admin");
+        boolean isCreateUser = request.getRequestURI().startsWith("/api/users")
+                && "POST".equalsIgnoreCase(request.getMethod());
+
+        if ((isAdminPath || isCreateUser) && !"admin-secret".equals(token)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            return false;
         }
 
         return true;
