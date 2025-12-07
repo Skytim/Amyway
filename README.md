@@ -65,9 +65,70 @@ When a major prize's probability is updated, the system automatically maintains 
 ## Database Schema
 
 ### ER Model
-- **Activity** `*` -- `*` **Prize** (Many-to-Many)
-- **Activity** `1` -- `*` **DrawRecord**
-- **User** `1` -- `*` **DrawRecord**
+```mermaid
+erDiagram
+    User ||--o{ DrawRecord : generates
+    Activity ||--o{ DrawRecord : tracks
+    Activity }|--|{ Prize : links
+
+    User {
+        long id
+        string name
+        int drawQuota
+    }
+    Activity {
+        long id
+        string name
+        datetime startTime
+        datetime endTime
+    }
+    Prize {
+        long id
+        string name
+        int totalStock
+        int availableStock
+        double probability
+    }
+    DrawRecord {
+        long id
+        datetime drawTime
+        boolean isWin
+    }
+```
+
+## Draw Process Flow
+```mermaid
+sequenceDiagram
+    participant User
+    participant Controller
+    participant DrawService
+    participant Database
+
+    User->>Controller: POST /api/draw
+    Controller->>DrawService: draw(userId, activityId)
+    
+    DrawService->>Database: Validate User & Quota
+    alt Quota Exceeded
+        DrawService-->>User: Error (Quota Exceeded)
+    end
+
+    DrawService->>Database: Fetch Prizes (Activity specific)
+    DrawService->>DrawService: Calculate Weights & Select
+    
+    alt Selected Prize "Thank You"
+        DrawService->>Database: Record Loss
+        DrawService-->>User: Return "Thank You"
+    else Selected Real Prize
+        DrawService->>Database: Decrement Stock (Optimistic Lock)
+        
+        alt Update Success
+            DrawService->>Database: Record Win
+            DrawService-->>User: Return Prize Details
+        else Update Failed (Concurrency)
+            DrawService-->>User: Return "Thank You" (Fallback)
+        end
+    end
+```
 
 ## API Documentation
 
