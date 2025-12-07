@@ -197,7 +197,29 @@ The system implements a simple token-based authentication mechanism with role se
 ### 4. Admin - Query Draw Records
 - **GET** `/api/admin/draw-records?activityId=1&isWin=true`
 
-## Testing
+### CI/CD & Docker
+The project uses **GitHub Actions** for CI/CD.
+- **Workflow**: `.github/workflows/maven.yml`
+- **Registry**: GitHub Container Registry (GHCR)
+- **Image Location**: `ghcr.io/skytim/amyway`
+- **Access**: [GitHub Packages - Amyway Container](https://github.com/Skytim/Amyway/pkgs/container/amyway)
+
+**Pulling the Image**:
+```bash
+docker pull ghcr.io/skytim/amyway:main
+```
+
+### Deployment (Free CD)
+The project includes a `render.yaml` Blueprint for **Render.com**.
+
+1.  Sign up for [Render.com](https://render.com/).
+2.  Go to **Blueprints** > **New Blueprint Instance**.
+3.  Connect your GitHub repository.
+4.  Render will automatically detect `render.yaml` and provision:
+    - **Web Service**: The Spring Boot Application (Free Tier).
+    - **Redis**: A free Redis instance (required by the app).
+
+*Note: The `render.yaml` is configured to use the `docker` environment and limits memory usage to fit within the free tier.*
 Run unit and integration tests:
 ```bash
 mvn test

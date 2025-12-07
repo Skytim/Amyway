@@ -1,0 +1,29 @@
+services:
+  # Web Service (The Spring Boot App)
+  - type: web
+    name: luckydraw
+    env: docker
+    plan: free
+    region: singapore
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SPRING_DATA_REDIS_HOST
+        fromService:
+          type: redis
+          name: luckydraw-redis
+          property: host
+      - key: SPRING_DATA_REDIS_PORT
+        fromService:
+          type: redis
+          name: luckydraw-redis
+          property: port
+      - key: JAVA_TOOL_OPTIONS
+        value: "-Xmx350m" # Optimized for Free Tier (512MB limit)
+
+  # Redis Service (Free Tier)
+  - type: redis
+    name: luckydraw-redis
+    region: singapore
+    plan: free
+    ipAllowList: [] # Only allow internal connections
