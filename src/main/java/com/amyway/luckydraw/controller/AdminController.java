@@ -34,10 +34,12 @@ public class AdminController {
         Activity activity = new Activity();
         activity.setName(request.getName());
         if (request.getStartTime() != null) {
-            activity.setStartTime(request.getStartTime().toLocalDateTime());
+            activity.setStartTime(
+                    request.getStartTime().atZoneSameInstant(java.time.ZoneId.systemDefault()).toLocalDateTime());
         }
         if (request.getEndTime() != null) {
-            activity.setEndTime(request.getEndTime().toLocalDateTime());
+            activity.setEndTime(
+                    request.getEndTime().atZoneSameInstant(java.time.ZoneId.systemDefault()).toLocalDateTime());
         }
         if (request.getMaxDrawsPerUser() != null) {
             activity.setMaxDrawsPerUser(request.getMaxDrawsPerUser());

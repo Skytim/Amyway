@@ -19,6 +19,8 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.math.BigDecimal;
+
 
 @Slf4j
 @Service
@@ -69,7 +71,10 @@ public class AdminServiceImpl implements AdminService {
         }
 
         // 4. Probability Check & Auto-fill
-        double totalInfoProb = prizes.stream().mapToDouble(Prize::getProbability).sum();
+        BigDecimal totalInfoProbBd = prizes.stream()
+                .map(p -> BigDecimal.valueOf(p.getProbability()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        double totalInfoProb = totalInfoProbBd.doubleValue();
 
         if (totalInfoProb > 1.0 + 0.0001) {
             throw new RuntimeException("總機率超過 100%: " + totalInfoProb);
@@ -77,7 +82,7 @@ public class AdminServiceImpl implements AdminService {
 
         if (totalInfoProb < 1.0 - 0.0001) {
             // Auto-create "Thank You" prize
-            double remainingProb = 1.0 - totalInfoProb;
+            double remainingProb = BigDecimal.ONE.subtract(totalInfoProbBd).doubleValue();
             Prize thankYouPrize = new Prize();
             thankYouPrize.setName("銘謝惠顧");
             thankYouPrize.setProbability(remainingProb);
@@ -126,7 +131,7 @@ public class AdminServiceImpl implements AdminService {
         double epsilon = 0.0001;
 
         for (Activity activity : activities) {
-            double otherPrizesProbSum = 0.0;
+            BigDecimal otherPrizesProbSumBd = BigDecimal.ZERO;
             Prize thankYouPrize = null;
             boolean thankYouIsTarget = false;
 
@@ -141,7 +146,7 @@ public class AdminServiceImpl implements AdminService {
                 } else if ("銘謝惠顧".equals(p.getName())) {
                     thankYouPrize = p;
                 } else {
-                    otherPrizesProbSum += p.getProbability();
+                    otherPrizesProbSumBd = otherPrizesProbSumBd.add(BigDecimal.valueOf(p.getProbability()));
                 }
             }
 
@@ -151,16 +156,20 @@ public class AdminServiceImpl implements AdminService {
             // Or strictly: others + target <= 1.0.
 
             double newTargetProb = prizeDetails.getProbability();
+            BigDecimal newTargetProbBd = BigDecimal.valueOf(newTargetProb);
 
             if (thankYouIsTarget) {
                 // Updating Thank You prize manually
-                if (otherPrizesProbSum + newTargetProb > 1.0 + epsilon) {
+                // Check if other + new > 1.0
+                BigDecimal totalBd = otherPrizesProbSumBd.add(newTargetProbBd);
+                if (totalBd.doubleValue() > 1.0 + epsilon) {
                     throw new RuntimeException("活動 '" + activity.getName() + "' 總機率超過 100%");
                 }
                 // No auto-balance needed, user is setting it explicitly
             } else {
                 // Updating a Normal Prize
-                double totalWithoutThankYou = otherPrizesProbSum + newTargetProb;
+                BigDecimal totalWithoutThankYouBd = otherPrizesProbSumBd.add(newTargetProbBd);
+                double totalWithoutThankYou = totalWithoutThankYouBd.doubleValue();
 
                 if (totalWithoutThankYou > 1.0 + epsilon) {
                     throw new RuntimeException("更新失敗。活動 '" + activity.getName() +
@@ -169,7 +178,7 @@ public class AdminServiceImpl implements AdminService {
 
                 // Auto-balance existing Thank You prize
                 if (thankYouPrize != null) {
-                    double newThankYouProb = 1.0 - totalWithoutThankYou;
+                    double newThankYouProb = BigDecimal.ONE.subtract(totalWithoutThankYouBd).doubleValue();
                     // Avoid negative due to precision
                     if (newThankYouProb < 0)
                         newThankYouProb = 0.0;
