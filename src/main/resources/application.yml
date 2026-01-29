@@ -17,6 +17,11 @@ spring:
       port: 6379
       # timeout: 60000
 
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
 # Springdoc OpenAPI Configuration
 springdoc:
   api-docs:
